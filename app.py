@@ -186,40 +186,40 @@ if uploaded_file is not None:
             with col2:
                 st.dataframe(userAndPercent)
 
-    #WordCloud
-
-    st.markdown('<h1 style="color:blue;">WordCloud</h1>', unsafe_allow_html=True)
-    wc_df=helper.createWordcloud(selected_user,df)
-    fig,ax=plt.subplots()
-    ax.imshow(wc_df)
-    st.pyplot(fig)
-
-    # Most common Words
-
-    most_common_df=helper.most_common_words(selected_user,df)
-    # st.dataframe(most_common_df)
-
-    st.title("Most common used words")
-    fig,ax=plt.subplots()
-    ax.barh(most_common_df['word'],most_common_df['Frequency'])
-    plt.xticks(rotation="vertical")
-    st.pyplot(fig)
-
-    #Most common emojis
-
-    st.title("Emojis Analysis")
-
-    col1,col2=st.columns(2)
-    emoji_df=helper.emoji_helper(selected_user,df)
-
-    with col1:
-        
-        st.dataframe(emoji_df) 
-
-    with col2:
+        #WordCloud
+    
+        st.markdown('<h1 style="color:blue;">WordCloud</h1>', unsafe_allow_html=True)
+        wc_df=helper.createWordcloud(selected_user,df)
         fig,ax=plt.subplots()
-        ax.pie(emoji_df['Count'].head(),labels=emoji_df['Emoji'].head(),autopct="%0.2f")
-        st.pyplot(fig)    
+        ax.imshow(wc_df)
+        st.pyplot(fig)
+    
+        # Most common Words
+    
+        most_common_df=helper.most_common_words(selected_user,df)
+        # st.dataframe(most_common_df)
+    
+        st.title("Most common used words")
+        fig,ax=plt.subplots()
+        ax.barh(most_common_df['word'],most_common_df['Frequency'])
+        plt.xticks(rotation="vertical")
+        st.pyplot(fig)
+
+        #Most common emojis
+    
+        st.title("Emojis Analysis")
+    
+        col1,col2=st.columns(2)
+        emoji_df=helper.emoji_helper(selected_user,df)
+    
+        with col1:
+            
+            st.dataframe(emoji_df) 
+    
+        with col2:
+            fig,ax=plt.subplots()
+            ax.pie(emoji_df['Count'].head(),labels=emoji_df['Emoji'].head(),autopct="%0.2f")
+            st.pyplot(fig)    
 
 else:
     st.warning("Please upload a WhatsApp chat file (TXT or CSV).")
