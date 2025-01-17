@@ -36,12 +36,27 @@ st.markdown(
 )
 
 # File uploader for both CSV and TXT files
-uploaded_file = st.sidebar.file_uploader("Choose a file", type=["txt", "csv"])
+uploaded_file = st.sidebar.file_uploader("Choose a file", type=["zip", "txt", "csv"])
 
 if uploaded_file is not None:
     # Read file based on the type
     file_type = uploaded_file.name.split('.')[-1]  # Get the file extension (txt or csv)
 
+    if file_type == 'zip':
+        # If it's a .zip file, extract and read the .txt file
+        with zipfile.ZipFile(uploaded_file, 'r') as z:
+            # List files in the zip
+            file_names = z.namelist()
+            # Find the .txt file
+            txt_files = [file for file in file_names if file.endswith('.txt')]
+            
+            if txt_files:
+                # Extract the first .txt file found
+                chat_data = z.read(txt_files[0]).decode('utf-8')
+                df = preprocessor.preprocess(chat_data)
+            else:
+                st.error("No .txt file found in the uploaded .zip file.")
+                st.stop()
     if file_type == 'txt':
         # For TXT files, process using preprocessor
         bytes_data = uploaded_file.getvalue()
