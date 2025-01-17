@@ -6,6 +6,35 @@ import seaborn as sns
 
 st.sidebar.title("Whatsapp Chat Analyzer")
 
+
+# Inject CSS for background color
+st.markdown(
+    """
+    <style>
+    /* Change the overall app background color */
+    .stApp {
+        background-color: #FFDAB9; /* Light orange */
+    }
+
+    /* Customize the sidebar */
+    section[data-testid="stSidebar"] {
+        background-color: #FFA07A; /* Light salmon */
+    }
+
+    /* Customize the header (if present) */
+    header {
+        background-color: #FF6347; /* Tomato red */
+    }
+
+    /* Optional: Change sidebar text color */
+    section[data-testid="stSidebar"] .css-1d391kg, section[data-testid="stSidebar"] .css-h5rgaw {
+        color: white; /* Sidebar text to white */
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # File uploader for both CSV and TXT files
 uploaded_file = st.sidebar.file_uploader("Choose a file", type=["txt", "csv"])
 
