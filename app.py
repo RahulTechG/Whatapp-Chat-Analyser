@@ -3,9 +3,11 @@ import preprocessor,helper
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import zipfile
 
-st.sidebar.title("Whatsapp Chat Analyzer")
 
+# Add background color
+import streamlit as st
 
 # Inject CSS for background color
 st.markdown(
@@ -35,6 +37,14 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# Example content
+st.title("WhatsApp Chat Analyzer")
+st.write("The background color of this app is light orange.")
+
+      
+
+st.sidebar.title("Whatsapp Chat Analyzer")
+
 # File uploader for both CSV and TXT files
 uploaded_file = st.sidebar.file_uploader("Choose a file", type=["zip", "txt", "csv"])
 
@@ -57,6 +67,8 @@ if uploaded_file is not None:
             else:
                 st.error("No .txt file found in the uploaded .zip file.")
                 st.stop()
+
+
     if file_type == 'txt':
         # For TXT files, process using preprocessor
         bytes_data = uploaded_file.getvalue()
@@ -201,40 +213,45 @@ if uploaded_file is not None:
             with col2:
                 st.dataframe(userAndPercent)
 
-        #WordCloud
-    
-        st.markdown('<h1 style="color:blue;">WordCloud</h1>', unsafe_allow_html=True)
-        wc_df=helper.createWordcloud(selected_user,df)
-        fig,ax=plt.subplots()
-        ax.imshow(wc_df)
-        st.pyplot(fig)
-    
-        # Most common Words
-    
-        most_common_df=helper.most_common_words(selected_user,df)
-        # st.dataframe(most_common_df)
-    
-        st.title("Most common used words")
-        fig,ax=plt.subplots()
-        ax.barh(most_common_df['word'],most_common_df['Frequency'])
-        plt.xticks(rotation="vertical")
-        st.pyplot(fig)
+    #WordCloud
 
-        #Most common emojis
+    st.markdown('<h1 style="color:blue;">WordCloud</h1>', unsafe_allow_html=True)
+    wc_df=helper.createWordcloud(selected_user,df)
+    fig,ax=plt.subplots()
+    ax.imshow(wc_df)
+    st.pyplot(fig)
+
+    # Most common Words
+
+    most_common_df=helper.most_common_words(selected_user,df)
+    # st.dataframe(most_common_df)
+
+    st.title("Most common used words")
+    fig,ax=plt.subplots()
+    ax.barh(most_common_df['word'],most_common_df['Frequency'])
+    plt.xticks(rotation="vertical")
+    st.pyplot(fig)
+
+    #Most common emojis
+
+    st.title("Emojis Analysis")
+
+    col1,col2=st.columns(2)
+    emoji_df=helper.emoji_helper(selected_user,df)
+
+    with col1:
+        
+        st.dataframe(emoji_df) 
+
+    with col2:
+        fig,ax=plt.subplots()
+        ax.pie(emoji_df['Count'].head(),labels=emoji_df['Emoji'].head(),autopct="%0.2f")
+        st.pyplot(fig)  
+
+
+
+
     
-        st.title("Emojis Analysis")
-    
-        col1,col2=st.columns(2)
-        emoji_df=helper.emoji_helper(selected_user,df)
-    
-        with col1:
-            
-            st.dataframe(emoji_df) 
-    
-        with col2:
-            fig,ax=plt.subplots()
-            ax.pie(emoji_df['Count'].head(),labels=emoji_df['Emoji'].head(),autopct="%0.2f")
-            st.pyplot(fig)    
 
 else:
     st.warning("Please upload a WhatsApp chat file (TXT or CSV).")
