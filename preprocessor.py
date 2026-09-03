@@ -1,49 +1,127 @@
 import re
 import pandas as pd
 
+
 def preprocess(data):
-    # Regular expression to extract the message timestamp and user-message pattern
-    pattern = r'(\d{1,2}/\d{1,2}/\d{2,4},\s\d{1,2}:\d{2}\s[apm]{2})\s-\s'
 
-    # Split messages based on the pattern
-    messages = re.split(pattern, data)[1:]
-    dates = re.findall(pattern, data)
+    # ---------------------------------------------------------
+    # 1. Detect WhatsApp message starting points
+    # ---------------------------------------------------------
 
-    # Ensure that dates and messages have the same length
-    if len(dates) != len(messages):
-        min_len = min(len(dates), len(messages))
-        dates = dates[:min_len]  # truncate the longer list
-        messages = messages[:min_len]
+    pattern = re.compile(
+        r'(?m)^'
+        r'(?:'
+        # Format:
+        # 03/09/26, 9:42 pm - Rahul: Hello
+        r'(?P<date1>\d{1,2}/\d{1,2}/\d{2,4},\s*\d{1,2}:\d{2}(?::\d{2})?\s*[apAP][mM])\s*-\s*(?P<msg1>.*)'
+        r'|'
+        # Format:
+        # [03/09/26, 9:42 pm] Rahul: Hello
+        r'\[(?P<date2>\d{1,2}/\d{1,2}/\d{2,4},\s*\d{1,2}:\d{2}(?::\d{2})?\s*[apAP][mM])\]\s*(?P<msg2>.*)'
+        r')'
+    )
 
-    # Create the DataFrame
-    df = pd.DataFrame({'message_date': dates, 'user_message': messages})
+    matches = list(pattern.finditer(data))
 
-    # Convert message_date to datetime with case-insensitive AM/PM handling
-    df['message_date'] = pd.to_datetime(df['message_date'], format='%d/%m/%y, %I:%M %p', errors='coerce')
+    # ---------------------------------------------------------
+    # 2. Check whether messages were detected
+    # ---------------------------------------------------------
 
-    df.rename(columns={'message_date': 'date'}, inplace=True)
+    if not matches:
+        return pd.DataFrame(
+            columns=[
+                'date',
+                'user',
+                'message',
+                'only_date',
+                'year',
+                'month_num',
+                'month',
+                'day',
+                'day_name',
+                'hour',
+                'minute',
+                'period'
+            ]
+        )
 
-    # Initialize lists for users and messages
-    users = []
-    messages_list = []
+    # ---------------------------------------------------------
+    # 3. Extract messages
+    # ---------------------------------------------------------
 
-    # Loop through the messages to split users and messages
-    for message in df['user_message']:
-        entry = re.split(r'([\w\W]+?):\s', message)
-        
-        if len(entry) > 1:
-            users.append(entry[1])
-            messages_list.append(" ".join(entry[2:]))  # Join remaining parts as the message
+    records = []
+
+    for i, match in enumerate(matches):
+
+        date_string = match.group('date1') or match.group('date2')
+        first_line = match.group('msg1') or match.group('msg2')
+
+        # Find where the next message starts
+        start = match.end()
+
+        if i + 1 < len(matches):
+            end = matches[i + 1].start()
+            remaining_text = data[start:end]
         else:
-            users.append('group_notification')
-            messages_list.append(entry[0])
+            remaining_text = data[start:]
 
-    # Add 'user' and 'message' columns to the DataFrame
-    df['user'] = users
-    df['message'] = messages_list
-    df.drop(columns=['user_message'], inplace=True)
+        # Add multiline content
+        full_message = first_line + remaining_text
 
-    # Extract additional date features
+        # -----------------------------------------------------
+        # 4. Separate user and message
+        # -----------------------------------------------------
+
+        user_match = re.match(
+            r'([^:]+):\s*(.*)',
+            full_message,
+            re.DOTALL
+        )
+
+        if user_match:
+
+            user = user_match.group(1).strip()
+            message = user_match.group(2).strip()
+
+        else:
+
+            # System notification / group notification
+            user = 'group_notification'
+            message = full_message.strip()
+
+        records.append(
+            {
+                'message_date': date_string,
+                'user': user,
+                'message': message
+            }
+        )
+
+    # ---------------------------------------------------------
+    # 5. Create DataFrame
+    # ---------------------------------------------------------
+
+    df = pd.DataFrame(records)
+
+    # ---------------------------------------------------------
+    # 6. Convert date
+    # ---------------------------------------------------------
+
+    df['date'] = pd.to_datetime(
+        df['message_date'],
+        dayfirst=True,
+        errors='coerce'
+    )
+
+    df.drop(columns=['message_date'], inplace=True)
+
+    # Remove rows where date could not be parsed
+    df = df.dropna(subset=['date']).reset_index(drop=True)
+
+    # ---------------------------------------------------------
+    # 7. Date features
+    # ---------------------------------------------------------
+
     df['only_date'] = df['date'].dt.date
     df['year'] = df['date'].dt.year
     df['month_num'] = df['date'].dt.month
@@ -52,16 +130,13 @@ def preprocess(data):
     df['day_name'] = df['date'].dt.day_name()
     df['hour'] = df['date'].dt.hour
     df['minute'] = df['date'].dt.minute
-    
-    # Period column (hourly range)
-    period = []
-    for hour in df['hour']:
-        if hour == 23:
-            period.append(f"{hour}-00")
-        elif hour == 0:
-            period.append(f"00-{hour+1}")
-        else:
-            period.append(f"{hour}-{hour+1}")
-    df['period'] = period
+
+    # ---------------------------------------------------------
+    # 8. Period
+    # ---------------------------------------------------------
+
+    df['period'] = df['hour'].apply(
+        lambda hour: f"{hour:02d}-{(hour + 1) % 24:02d}"
+    )
 
     return df
