@@ -69,10 +69,10 @@ if uploaded_file is not None:
                 st.stop()
 
 
-    if file_type == 'txt':
+    elif file_type == 'txt':
         # For TXT files, process using preprocessor
         bytes_data = uploaded_file.getvalue()
-        data = bytes_data.decode("utf-8")
+        data = bytes_data.decode("utf-8",errors="replace")
         df = preprocessor.preprocess(data)
     
     elif file_type == 'csv':
