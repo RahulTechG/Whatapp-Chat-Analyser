@@ -139,4 +139,10 @@ def preprocess(data):
         lambda hour: f"{hour:02d}-{(hour + 1) % 24:02d}"
     )
 
+    if df.empty:
+    raise ValueError(
+        "No messages could be parsed. "
+        "Please check the chat format."
+    )
+
     return df
